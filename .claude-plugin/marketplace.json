@@ -1,0 +1,23 @@
+{
+  "name": "claude-code-mods",
+  "description": "yjsplay2002's Claude Code mods.",
+  "owner": {
+    "name": "yjsplay2002"
+  },
+  "plugins": [
+    {
+      "name": "cache-meter",
+      "description": "How well this session uses the prompt cache, in the status line: time left, hit rate, tokens saved and rebuilds. A compact button above the prompt when compacting is cheaper than carrying the context.",
+      "version": "0.3.0",
+      "source": "./mods/cache-meter",
+      "category": "Spend less",
+      "tags": [
+        "statusline",
+        "band",
+        "pane",
+        "toast",
+        "command"
+      ]
+    }
+  ]
+}

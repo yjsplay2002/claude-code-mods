@@ -1,0 +1,48 @@
+{
+  "name": "cache-meter",
+  "version": "0.3.0",
+  "author": { "name": "yjsplay2002" },
+  "license": "MIT",
+  "description": "How well the session uses the prompt cache, and a compact button when compacting is cheaper than carrying the context",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "autoCompact": {
+      "type": "string",
+      "title": "Auto compact",
+      "description": "off: never. idle: only when you are away and the cache is about to expire. always: whenever compacting is recommended and the session is idle.",
+      "default": "idle",
+      "options": ["off", "idle", "always"]
+    },
+    "horizonTurns": {
+      "type": "number",
+      "title": "Expected remaining turns",
+      "description": "How many more turns you expect in this conversation; the cost comparison runs over this many.",
+      "default": 15
+    },
+    "minContextTokens": {
+      "type": "number",
+      "title": "Minimum context to suggest compact",
+      "description": "Compaction is not suggested below this context size, in tokens.",
+      "default": 80000
+    },
+    "minSavingTokens": {
+      "type": "number",
+      "title": "Minimum saving to suggest compact",
+      "description": "Compaction is suggested only when it saves at least this many input-token equivalents.",
+      "default": 40000
+    },
+    "ttl": {
+      "type": "string",
+      "title": "Cache TTL",
+      "description": "auto infers it from your plan and from what the cache did; set 5m or 1h to force it.",
+      "default": "auto",
+      "options": ["auto", "5m", "1h"]
+    },
+    "inputUsdPerMTok": {
+      "type": "number",
+      "title": "Input price (USD per million tokens)",
+      "description": "Your model's base input price, to show savings in dollars too. 0 shows tokens only.",
+      "default": 0
+    }
+  }
+}
