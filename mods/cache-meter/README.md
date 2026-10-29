@@ -68,10 +68,6 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt
 box, then Plugins, Add marketplace with `yjsplay2002/claude-code-mods`, then
 Add plugin.
 
-This repository is private: installing needs read access on GitHub and a git
-credential for github.com on your machine (an SSH key, or `gh auth login` then
-`gh auth setup-git`).
-
 ## What it shows
 
 - **Cache**: time left before the main conversation's prompt cache expires,

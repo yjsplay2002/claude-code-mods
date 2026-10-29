@@ -60,9 +60,6 @@ claude plugin install cache-meter --marketplace yjsplay2002/claude-code-mods
 `/plugin`이 안 되는 데스크톱 앱에서는 프롬프트 옆 + → Plugins → Add marketplace에
 `yjsplay2002/claude-code-mods` 입력 → Add plugin 순서로 설치합니다.
 
-이 저장소는 private입니다. 설치하려면 GitHub 읽기 권한과 이 PC의 github.com git 인증
-(SSH 키, 또는 `gh auth login` 후 `gh auth setup-git`)이 필요합니다.
-
 ## 무엇을 보여주나
 
 - **캐시**: 메인 대화의 프롬프트 캐시가 만료되기까지 남은 시간과 TTL(5m
