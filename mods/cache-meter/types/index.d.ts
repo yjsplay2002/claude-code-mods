@@ -28,6 +28,7 @@ declare module 'claude-code' {
       isCompacting: boolean
       tick: number
       note: string | null
+      compacted: Shaped<{ at: number; trigger: string } | null>
       isBandHidden: boolean
     }
   }

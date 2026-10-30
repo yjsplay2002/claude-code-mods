@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { advise, fmtDuration, fmtTokens, observeTtl, resolveTtl } from '../hooks/calc'
+import { advise, fmtDuration, fmtTokens, gauge, observeTtl, resolveTtl } from '../hooks/calc'
 import type { MainStep } from '../types'
 
 const NOW = 1_800_000_000_000
@@ -63,6 +63,10 @@ test('numbers read short', async () => {
   expect(fmtTokens(1_000_000)).toBe('1.0M')
   expect(fmtDuration(42 * 60_000)).toBe('42m')
   expect(fmtDuration(130 * 60_000)).toBe('2h10m')
+  expect(gauge(0)).toBe('░░░░░░░░░░')
+  expect(gauge(0.01)).toBe('█░░░░░░░░░')
+  expect(gauge(0.21)).toBe('██░░░░░░░░')
+  expect(gauge(1.3)).toBe('██████████')
 })
 
 const BAND = {
@@ -102,7 +106,7 @@ test('the band only offers the compact button', async ($, on) => {
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
     expect(await ui.find({ key: 'compact' })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /남음/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /left \(|남음/ })).toBeUndefined()
     await ui.unmount()
   }
 })
@@ -124,5 +128,25 @@ test('the status line carries session cache state, not usage limits', async ($, 
   }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  expect(lines.at(-1)).toBe('○ 캐시: 첫 응답 대기')
+  expect(lines.at(-1)).toBe('○ cache: waiting for the first reply  │  Auto Compact Mode: Idle')
+})
+
+test('the status line says a compaction happened while the cache waits for a reply', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const lines: (string | undefined)[] = []
+  on('ui.status', (_, e) => {
+    lines.push(e.text)
+    return { value: undefined }
+  })
+  on('state.get', (_, e) =>
+    e.key === 'compacted'
+      ? { value: { value: { shape: 'compacted-1', value: { at: NOW - 7 * 60_000, trigger: 'plugin' } }, version: 1 } }
+      : { value: { value: undefined, version: 0 } },
+  )
+  on('store.get', () => ({ value: undefined }))
+  on('command.register', () => ({ value: undefined }))
+  on('session.usage', () => ({ value: { rateLimits: [], context: { window: 1_000_000 } } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  expect(lines.at(-1)).toBe('◇ compacted (cache-meter, 7m ago) · waiting for the first reply  │  Auto Compact Mode: Idle')
 })

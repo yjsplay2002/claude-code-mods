@@ -11,6 +11,7 @@ import {
   fmtDuration,
   fmtTokens,
   fmtUsd,
+  gauge,
   observeTtl,
   remainingMs,
   resolveTtl,
@@ -37,11 +38,52 @@ const isBusy = atom({ plugin: 'cache-meter', key: 'isBusy' } as const, false)
 const isCompacting = atom({ plugin: 'cache-meter', key: 'isCompacting' } as const, false)
 const tick = atom({ plugin: 'cache-meter', key: 'tick' } as const, 0)
 const note = atom({ plugin: 'cache-meter', key: 'note' } as const, null)
+const compacted = atom({ plugin: 'cache-meter', key: 'compacted' } as const, null, { shape: 'compacted-1' })
 const isBandHidden = atom({ plugin: 'cache-meter', key: 'isBandHidden' } as const, false)
 
 type AutoMode = 'off' | 'idle' | 'always'
 const AUTO_LABEL: Record<AutoMode, string> = { off: '끔', idle: '자리 비울 때만', always: '항상' }
 const NEXT_AUTO: Record<AutoMode, AutoMode> = { off: 'idle', idle: 'always', always: 'off' }
+type Lang = 'en' | 'ko'
+type StatusText = {
+  compacting: string
+  waiting: string
+  compacted: (how: string, ago: string) => string
+  expired: (ago: string, rewrite: string) => string
+  left: (time: string, ttl: Ttl) => string
+  hit: (last: string, session: string) => string
+  saved: (n: string) => string
+  rewrites: (n: number) => string
+  auto: Record<AutoMode, string>
+  how: Record<string, string>
+}
+const STATUS: Record<Lang, StatusText> = {
+  en: {
+    compacting: '◐ compacting…',
+    waiting: '○ cache: waiting for the first reply',
+    compacted: (how, ago) => `◇ compacted (${how}, ${ago} ago) · waiting for the first reply`,
+    expired: (ago, rewrite) => `✕ cache expired (${ago} ago) · rewrite ≈${rewrite} · not compacted`,
+    left: (time, ttl) => `cache ${time} left (${ttl})`,
+    hit: (last, session) => `hit ${last} (session ${session})`,
+    saved: n => `Cache saved ≈${n}`,
+    rewrites: n => `Cache misses ${n} (context re-written)`,
+    auto: { off: 'Auto Compact Mode: Off', idle: 'Auto Compact Mode: Idle', always: 'Auto Compact Mode: Always' },
+    how: { manual: '/compact', auto: 'auto threshold', plugin: 'cache-meter' },
+  },
+  ko: {
+    compacting: '◐ compact 중…',
+    waiting: '○ 캐시: 첫 응답 대기',
+    compacted: (how, ago) => `◇ compact됨 (${how}, ${ago} 전) · 첫 응답 대기`,
+    expired: (ago, rewrite) => `✕ 캐시 만료 (${ago} 전) · 재작성 ≈${rewrite} · compact 안 됨`,
+    left: (time, ttl) => `캐시 ${time} 남음 (${ttl})`,
+    hit: (last, session) => `적중 ${last} (세션 ${session})`,
+    saved: n => `캐시 절약 ≈${n}`,
+    rewrites: n => `캐시 깨짐 ${n}회 (컨텍스트 재작성)`,
+    auto: { off: '자동 compact 모드: 끔', idle: '자동 compact 모드: 자리 비울 때만', always: '자동 compact 모드: 항상' },
+    how: { manual: '/compact', auto: '자동(임계치)', plugin: 'cache-meter' },
+  },
+}
+
 const KIND_LABEL: Record<Advice['kind'], string> = {
   active: '작업 중',
   expiring: '곧 만료',
@@ -60,6 +102,9 @@ type View = {
   isBusy: boolean
   isCompacting: boolean
   note: string | null
+  auto: AutoMode
+  compacted: { at: number; trigger: string } | null
+  lang: Lang
 }
 
 type Cfg = {
@@ -68,6 +113,7 @@ type Cfg = {
   horizon: number
   ttlSetting: string
   usdPerMTok: number
+  lang: Lang
 }
 
 // Module variables start over on a reload; nothing here needs to survive one.
@@ -77,6 +123,7 @@ let cfg: Cfg = {
   horizon: 15,
   ttlSetting: 'auto',
   usdPerMTok: 0,
+  lang: 'en',
 }
 let typedAt = 0
 let turnEndedAt = 0
@@ -113,6 +160,9 @@ async function view($: EngineInterface): Promise<View> {
     isBusy: busy,
     isCompacting: await read($, isCompacting),
     note: await read($, note),
+    auto: cfg.auto,
+    compacted: await read($, compacted),
+    lang: cfg.lang,
   }
 }
 
@@ -180,6 +230,7 @@ export const register: Register = (on, options) => {
     horizon,
     ttlSetting: typeof options.ttl === 'string' ? options.ttl : 'auto',
     usdPerMTok: num(options.inputUsdPerMTok, 0),
+    lang: options.language === 'ko' ? 'ko' : 'en',
   }
   const { auto, usdPerMTok } = cfg
 
@@ -209,6 +260,7 @@ export const register: Register = (on, options) => {
       await update($, baseline, () => 0)
       await update($, hits, () => NO_HITS)
       await update($, note, () => null)
+      await update($, compacted, () => null)
     }
     return next(e)
   })
@@ -288,6 +340,8 @@ export const register: Register = (on, options) => {
         ? `compact됨 (${how}) ${fmtTokens(before)} → ${fmtTokens(after)} · 다음 메시지가 요약을 새로 캐시해요`
         : `compact됨 (${how}) · 다음 메시지가 요약을 새로 캐시해요`,
     )
+    const at = await $.clock.now()
+    await update($, compacted, () => ({ at, trigger: e.trigger }))
     await update($, last, () => null)
     await refreshStatus($)
     return result
@@ -455,26 +509,36 @@ function cacheSaving(v: View): number {
 
 /** One plain line, so it reads the same in any terminal font. */
 function cacheState(v: View): string {
-  if (v.isCompacting) return '◐ compact 중…'
-  if (!v.step) return '○ 캐시: 첫 응답 대기'
+  const t = STATUS[v.lang]
+  if (v.isCompacting) return t.compacting
+  if (!v.step) {
+    const c = v.compacted
+    return c ? t.compacted(t.how[c.trigger] ?? c.trigger, fmtDuration(v.now - c.at)) : t.waiting
+  }
   const left = remainingMs(v.step, v.ttl, v.now)
   if (left <= 0) {
     const rewrite = v.advice ? WRITE[v.ttl] * (v.advice.contextTokens - v.advice.baselineTokens) : 0
-    return `✕ 캐시 만료 (${fmtDuration(-left)} 전) · 재작성 ≈${fmtTokens(rewrite)}`
+    return t.expired(fmtDuration(-left), fmtTokens(rewrite))
   }
-  return `${left <= EXPIRING_MS[v.ttl] ? '⚠' : '●'} 캐시 ${fmtDuration(left)} 남음 (${v.ttl})`
+  return `${left <= EXPIRING_MS[v.ttl] ? '⚠' : '●'} ${t.left(fmtDuration(left), v.ttl)}`
 }
 
 function statusLine(v: View): string {
+  const t = STATUS[v.lang]
   const segs = [cacheState(v)]
   const s = v.step
-  if (s) segs.push(`적중 ${pct(s.cacheRead, s.input + s.cacheRead + s.cacheWrite)} (세션 ${pct(v.hits.read, v.hits.total)})`)
-  if (v.hits.total > 0) segs.push(`절약 ≈${fmtTokens(cacheSaving(v))}`)
-  if (v.hits.misses > 0) segs.push(`재작성 ${v.hits.misses}회`)
+  if (s) segs.push(t.hit(pct(s.cacheRead, s.input + s.cacheRead + s.cacheWrite), pct(v.hits.read, v.hits.total)))
+  if (v.hits.total > 0) segs.push(t.saved(fmtTokens(cacheSaving(v))))
+  if (v.hits.misses > 0) segs.push(t.rewrites(v.hits.misses))
   if (s) {
     const ctx = contextOf(s)
-    segs.push(v.window > 0 ? `ctx ${fmtTokens(ctx)}/${fmtTokens(v.window)}` : `ctx ${fmtTokens(ctx)}`)
+    segs.push(
+      v.window > 0
+        ? `ctx ${gauge(ctx / v.window)} ${pct(ctx, v.window)} ${fmtTokens(ctx)}/${fmtTokens(v.window)}`
+        : `ctx ${fmtTokens(ctx)}`,
+    )
   }
+  segs.push(t.auto[v.auto])
   return segs.join(SEP)
 }
 

@@ -12,8 +12,10 @@ away and the cache is about to expire.
 Status line, always:
 
 ```
-● 캐시 42m 남음 (1h)  │  적중 97% (세션 94%)  │  절약 ≈3.1M  │  재작성 1회  │  ctx 214k/1.0M
+● cache 42m left (1h)  │  hit 97% (session 94%)  │  Cache saved ≈3.1M  │  Cache misses 1 (context re-written)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  Auto Compact Mode: Idle
 ```
+After a compaction, until the next reply: `◇ compacted (cache-meter, 7m ago) · waiting for the first reply`. A lapsed cache that was not compacted ends in `· not compacted`. Set `language` to `ko` for a Korean status line.
+
 
 Above the prompt, only when compacting pays off:
 
@@ -136,6 +138,7 @@ and to the 5-minute cache.
 | `minSavingTokens` | 40000 | no suggestion below this saving |
 | `ttl` | `auto` | force `5m` or `1h`; `auto` infers it from your plan and the cache's behaviour |
 | `inputUsdPerMTok` | 0 | your model's input price, to show dollars too |
+| `language` | en | status line language: `en` or `ko` |
 
 ## Development
 

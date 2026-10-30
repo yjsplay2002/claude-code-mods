@@ -177,6 +177,12 @@ export function fmtTokens(n: number): string {
   return `${sign}${Math.round(a)}`
 }
 
+/** Ten cells, at least one lit once anything is used. */
+export function gauge(share: number): string {
+  const lit = share > 0 ? Math.min(10, Math.max(1, Math.round(share * 10))) : 0
+  return '█'.repeat(lit) + '░'.repeat(10 - lit)
+}
+
 export function fmtDuration(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000))
   if (s < 60) return `${s}s`

@@ -5,7 +5,7 @@
 How well this session uses the prompt cache, in the status line:
 
 ```
-● 캐시 42m 남음 (1h)  │  적중 97% (세션 94%)  │  절약 ≈3.1M  │  재작성 1회  │  ctx 214k/1.0M
+● cache 42m left (1h)  │  hit 97% (session 94%)  │  Cache saved ≈3.1M  │  Cache misses 1 (context re-written)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  Auto Compact Mode: Idle
 ```
 
 - Cache time left and TTL (5m or 1h), hit rate for the last request and the session, input-token equivalents the cache saved, and how often a cached prefix had to be re-written.

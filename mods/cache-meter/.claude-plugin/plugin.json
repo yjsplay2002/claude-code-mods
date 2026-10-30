@@ -1,6 +1,6 @@
 {
   "name": "cache-meter",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": { "name": "yjsplay2002" },
   "license": "MIT",
   "description": "How well the session uses the prompt cache, and a compact button when compacting is cheaper than carrying the context",
@@ -43,6 +43,13 @@
       "title": "Input price (USD per million tokens)",
       "description": "Your model's base input price, to show savings in dollars too. 0 shows tokens only.",
       "default": 0
+    },
+    "language": {
+      "type": "string",
+      "title": "Status line language",
+      "description": "Language of the status line.",
+      "default": "en",
+      "options": ["en", "ko"]
     }
   }
 }
