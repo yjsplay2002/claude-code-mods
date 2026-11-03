@@ -3,17 +3,26 @@
 [English](README.md) · 한국어
 
 이번 세션이 프롬프트 캐시를 얼마나 잘 쓰고 있는지(만료까지 남은 시간, 적중률, 캐시로 아낀
-토큰, 캐시를 다시 쓴 횟수)를 status 줄에 보여주는 Claude Code mod입니다. 대화를 계속 끌고 가는 것보다 compact하는 게 더
+토큰, 캐시가 깨진 횟수, 컨텍스트 사용량, 자동 compact 모드)를 status 줄에 보여주는 Claude Code mod입니다. 대화를 계속 끌고 가는 것보다 compact하는 게 더
 싸지면 프롬프트 위에 **compact** 버튼이 나타납니다. 자동 compact(`idle`, 기본으로 켜짐)는
 자리를 비운 사이 캐시가 곧 만료될 때 알아서 compact합니다.
 
 status 줄 (항상):
 
 ```
-● 캐시 42m 남음 (1h)  │  적중 97% (세션 94%)  │  캐시 절약 ≈3.1M  │  캐시 깨짐 1회 (컨텍스트 재작성)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  자동 compact 모드: 자리 비울 때만
+● 캐시 42m 남음 (1h)  │  적중 97% (세션 94%)  │  캐시 깨짐 1회 (컨텍스트 재작성)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  자동 compact 모드: 자리 비울 때만
 ```
-status 줄은 기본이 영어이고, `language`를 `ko`로 두면 위처럼 한국어로 나옵니다. compact 직후 다음 응답 전까지는 `◇ compact됨 (cache-meter, 7m 전) · 첫 응답 대기`로 바뀌고, compact 없이 캐시가 만료되면 끝에 `· compact 안 됨`이 붙습니다.
 
+status 줄은 기본이 영어이고, `language`를 `ko`로 두면 위처럼 한국어로 나옵니다.
+
+compact 직후 다음 응답 전까지:
+
+```
+◇ compact됨 (cache-meter, 7m 전) · 첫 응답 대기  │  자동 compact 모드: 자리 비울 때만
+```
+
+compact 없이 캐시가 만료되면 그렇다고 표시합니다: `✕ 캐시 만료 (3h10m 전) · 재작성 ≈42k ·
+compact 안 됨`.
 
 프롬프트 위 (compact가 이득일 때만):
 
@@ -62,15 +71,21 @@ claude plugin install cache-meter --marketplace yjsplay2002/claude-code-mods
 `/plugin`이 안 되는 데스크톱 앱에서는 프롬프트 옆 + → Plugins → Add marketplace에
 `yjsplay2002/claude-code-mods` 입력 → Add plugin 순서로 설치합니다.
 
+새 버전을 자동으로 받으려면 marketplace의 자동 업데이트를 켭니다:
+`/plugin` → Marketplaces → `claude-code-mods` → Enable auto-update. Claude Code가 시작할 때
+확인하며, 실행 중인 세션에서는 `/plugin marketplace update claude-code-mods` 후
+`/reload-plugins`를 실행합니다.
+
 ## 무엇을 보여주나
 
 - **캐시**: 메인 대화의 프롬프트 캐시가 만료되기까지 남은 시간과 TTL(5m
-  또는 1h). `●` 살아 있음, `⚠` 곧 만료, `✕` 만료됨(다음 메시지가 다시 쓸 토큰 수 표시).
+  또는 1h). `●` 살아 있음, `⚠` 곧 만료, `✕` 만료됨(다음 메시지가 다시 쓸 토큰 수와, 만료 전에
+  compact됐는지 표시), `◇` compact됨(다음 응답 대기).
   캐시를 읽는 요청이 있을 때마다 타이머가 다시 차므로, 손을 놓고 있을 때만 줄어듭니다.
 - **적중률**: 마지막 요청과 세션 전체에서 입력 중 캐시에서 읽은 비율.
-- **절약**: 이번 세션에 캐시 덕분에 아낀 입력 토큰 환산량(읽기 0.1×, 쓰기 할증은 차감).
-- **재작성**: 직전 요청이 캐시해 둔 앞부분을 다시 써야 했던 요청 수.
-- **컨텍스트**: 다음 요청이 다시 보낼 양 / 모델의 컨텍스트 창.
+- **캐시 깨짐**: 직전 컨텍스트의 절반도 캐시에서 못 읽어 다시 써야 했던 요청 수(캐시 만료, 모델·도구 변경, compact 등).
+- **컨텍스트**: 다음 요청이 다시 보낼 양을 모델의 컨텍스트 창 대비 10칸 게이지, 퍼센트, 토큰 수로 표시.
+- **자동 compact 모드**: 지금 설정(`끔`, `자리 비울 때만`, `항상`).
 
 사용량 한도는 다른 도구에 맡깁니다.
 

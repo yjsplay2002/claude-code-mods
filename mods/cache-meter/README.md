@@ -3,19 +3,26 @@
 English · [한국어](README.ko.md)
 
 A Claude Code mod that shows, in the status line, how well this session uses the
-prompt cache: time left before it expires, hit rate, tokens it saved and how
-often it had to be rebuilt. When compacting the
-conversation is cheaper than carrying it, a **compact** button appears above
+prompt cache: time left before it expires, hit rate, how
+often it missed, how full the context is and the auto compact mode. When
+compacting the conversation is cheaper than carrying it, a **compact** button appears above
 the prompt. Auto compact (`idle`, on by default) compacts for you when you step
 away and the cache is about to expire.
 
 Status line, always:
 
 ```
-● cache 42m left (1h)  │  hit 97% (session 94%)  │  Cache saved ≈3.1M  │  Cache misses 1 (context re-written)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  Auto Compact Mode: Idle
+● cache 42m left (1h)  │  hit 97% (session 94%)  │  Cache misses 1 (context re-written)  │  ctx ██░░░░░░░░ 21% 214k/1.0M  │  Auto Compact Mode: Idle
 ```
-After a compaction, until the next reply: `◇ compacted (cache-meter, 7m ago) · waiting for the first reply`. A lapsed cache that was not compacted ends in `· not compacted`. Set `language` to `ko` for a Korean status line.
 
+After a compaction, until the next reply:
+
+```
+◇ compacted (cache-meter, 7m ago) · waiting for the first reply  │  Auto Compact Mode: Idle
+```
+
+A lapsed cache that was not compacted says so: `✕ cache expired (3h10m ago) ·
+rewrite ≈42k · not compacted`. Set `language` to `ko` for a Korean status line.
 
 Above the prompt, only when compacting pays off:
 
@@ -23,7 +30,7 @@ Above the prompt, only when compacting pays off:
 [ compact (≈-109k) ]  7턴이면 본전, 계속하면 ≈109k 절약 · ctx 214k→44k   자세히
 ```
 
-The labels are in Korean.
+The button and the `/cache-meter` pane are in Korean.
 
 Requires Claude Code v2.1.287 or later (mods).
 
@@ -70,16 +77,23 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt
 box, then Plugins, Add marketplace with `yjsplay2002/claude-code-mods`, then
 Add plugin.
 
+To pick up new versions on their own, turn on auto-update for the marketplace:
+`/plugin` → Marketplaces → `claude-code-mods` → Enable auto-update. Claude Code
+checks at startup; in a running session use `/plugin marketplace update
+claude-code-mods` and `/reload-plugins`.
+
 ## What it shows
 
 - **Cache**: time left before the main conversation's prompt cache expires,
   and its TTL (5m or 1h). `●` warm, `⚠` about to expire,
-  `✕` cold, with what the next message will re-write. Every request that reads
-  the cache resets the timer, so it only counts down while you are idle.
+  `✕` cold, with what the next message will re-write and whether the
+  conversation was compacted before it lapsed; `◇` compacted, waiting for the
+  next reply. Every request that reads the cache resets the timer, so it only
+  counts down while you are idle.
 - **Hit rate**: the share of the last request's input served from cache, and of the whole session.
-- **Saved**: input-token equivalents the cache saved this session (reads at 0.1x, minus the write premium).
-- **Rebuilds**: requests that had to re-write a prefix the previous request had cached.
-- **Context**: what the next request re-sends, against the model's window.
+- **Cache misses**: requests that read less than half of the previous context from cache, so they re-wrote it (an expired cache, a model or tool change, a compaction).
+- **Context**: a 10-cell gauge, percent and tokens of what the next request re-sends, against the model's window.
+- **Auto Compact Mode**: `Off`, `Idle` or `Always`, the current auto compact setting.
 
 Usage limits are left to other tools.
 

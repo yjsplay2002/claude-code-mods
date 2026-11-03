@@ -1,6 +1,6 @@
 {
   "name": "cache-meter",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": { "name": "yjsplay2002" },
   "license": "MIT",
   "description": "How well the session uses the prompt cache, and a compact button when compacting is cheaper than carrying the context",

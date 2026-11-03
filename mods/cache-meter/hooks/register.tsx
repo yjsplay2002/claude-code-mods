@@ -52,7 +52,6 @@ type StatusText = {
   expired: (ago: string, rewrite: string) => string
   left: (time: string, ttl: Ttl) => string
   hit: (last: string, session: string) => string
-  saved: (n: string) => string
   rewrites: (n: number) => string
   auto: Record<AutoMode, string>
   how: Record<string, string>
@@ -65,7 +64,6 @@ const STATUS: Record<Lang, StatusText> = {
     expired: (ago, rewrite) => `✕ cache expired (${ago} ago) · rewrite ≈${rewrite} · not compacted`,
     left: (time, ttl) => `cache ${time} left (${ttl})`,
     hit: (last, session) => `hit ${last} (session ${session})`,
-    saved: n => `Cache saved ≈${n}`,
     rewrites: n => `Cache misses ${n} (context re-written)`,
     auto: { off: 'Auto Compact Mode: Off', idle: 'Auto Compact Mode: Idle', always: 'Auto Compact Mode: Always' },
     how: { manual: '/compact', auto: 'auto threshold', plugin: 'cache-meter' },
@@ -77,7 +75,6 @@ const STATUS: Record<Lang, StatusText> = {
     expired: (ago, rewrite) => `✕ 캐시 만료 (${ago} 전) · 재작성 ≈${rewrite} · compact 안 됨`,
     left: (time, ttl) => `캐시 ${time} 남음 (${ttl})`,
     hit: (last, session) => `적중 ${last} (세션 ${session})`,
-    saved: n => `캐시 절약 ≈${n}`,
     rewrites: n => `캐시 깨짐 ${n}회 (컨텍스트 재작성)`,
     auto: { off: '자동 compact 모드: 끔', idle: '자동 compact 모드: 자리 비울 때만', always: '자동 compact 모드: 항상' },
     how: { manual: '/compact', auto: '자동(임계치)', plugin: 'cache-meter' },
@@ -528,7 +525,6 @@ function statusLine(v: View): string {
   const segs = [cacheState(v)]
   const s = v.step
   if (s) segs.push(t.hit(pct(s.cacheRead, s.input + s.cacheRead + s.cacheWrite), pct(v.hits.read, v.hits.total)))
-  if (v.hits.total > 0) segs.push(t.saved(fmtTokens(cacheSaving(v))))
   if (v.hits.misses > 0) segs.push(t.rewrites(v.hits.misses))
   if (s) {
     const ctx = contextOf(s)
