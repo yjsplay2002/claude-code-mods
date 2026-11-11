@@ -18,6 +18,22 @@
         "toast",
         "command"
       ]
+    },
+    {
+      "name": "ai-office",
+      "description": "AI office for a one-person business: a PM main session, persona subagents, a board/ of TODOs and decisions, and a local 3D forest-office dashboard. /ai-office:init interviews you and sets it up.",
+      "version": "0.1.0",
+      "source": {
+        "source": "github",
+        "repo": "yjsplay2002/ai-office"
+      },
+      "category": "Run a team",
+      "tags": [
+        "agents",
+        "subagents",
+        "dashboard",
+        "command"
+      ]
     }
   ]
 }

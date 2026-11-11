@@ -18,6 +18,7 @@ Updates arrive only when a mod's version changes. To get them on their own, turn
 | Mod | What it does | Category |
 | --- | --- | --- |
 | [cache-meter](mods/cache-meter) | How well this session uses the prompt cache, in the status line: time left, hit rate, cache misses, a context gauge and the auto compact mode, in English or Korean. A compact button when compacting is cheaper than carrying the context. | Spend less |
+| [ai-office](https://github.com/yjsplay2002/ai-office) | An AI office for a one-person business: a PM session hands work to persona subagents, keeps TODOs and decisions in board/, and shows the team at work in a local 3D forest-office dashboard. /ai-office:init interviews you and sets it up. | Run a team |
 
 Notes on each mod: [docs/mods.md](docs/mods.md). Adding or changing one: [CONTRIBUTING.md](CONTRIBUTING.md).
 
