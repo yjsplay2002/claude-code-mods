@@ -1,0 +1,34 @@
+name: sync-versions
+# GitHub 저장소를 source로 둔 플러그인(ai-office 등)의 버전을 그 저장소의 plugin.json에 맞춘다.
+# 플러그인 저장소의 릴리스가 repository_dispatch(plugin-released)로 바로 깨우고, 못 깨워도 매시간 한 번 맞춘다.
+on:
+  repository_dispatch:
+    types: [plugin-released]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+concurrency: sync-versions
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 버전 맞추기
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/sync-versions.mjs | tee /tmp/changes.txt
+      - name: 바뀌었으면 커밋
+        run: |
+          if git diff --quiet -- .claude-plugin/marketplace.json; then echo "바뀐 버전 없음"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .claude-plugin/marketplace.json
+          git commit -m "$(paste -sd ','/tmp/changes.txt) in the marketplace (auto)"
+          git push
