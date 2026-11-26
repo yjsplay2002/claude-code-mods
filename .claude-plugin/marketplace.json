@@ -22,7 +22,7 @@
     {
       "name": "ai-office",
       "description": "AI office for a one-person business: a PM main session, persona subagents, a board/ of TODOs and decisions, and a local 3D forest-office dashboard. /ai-office:init interviews you and sets it up.",
-      "version": "0.4.44",
+      "version": "0.4.45",
       "source": {
         "source": "github",
         "repo": "yjsplay2002/ai-office"
